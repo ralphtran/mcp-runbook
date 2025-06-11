@@ -1,0 +1,15 @@
+.aider*
+*.egg-info/
+*.pyc
+__pycache__/
+.venv/
+build/
+dist/
+# IDE specific files
+.idea/
+.vscode/
+# OS specific files
+.DS_Store
+# Test coverage
+.coverage
+htmlcov/
