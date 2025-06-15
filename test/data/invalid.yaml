@@ -1,0 +1,12 @@
+tools:
+  - name: "test-tool"
+    steps:
+      - name: "Test Step"
+        command: "echo 'Hello World'"
+version: "1.0"
+runbooks:
+  - name: "invalid-runbook"
+    description: "Invalid Runbook"
+    steps:
+      - name: "Invalid Step"
+        # Missing 'command' field to cause validation error

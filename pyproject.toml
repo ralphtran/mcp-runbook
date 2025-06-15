@@ -14,15 +14,16 @@ keywords = ["mcp", "mcp-server", "runbook", "builder"] # Optional
 
 dependencies = [
     "pyyaml", # For parsing the input YAML data
+    "pydantic>=2.0",  # For model validation
 ]
 
 [dependency-groups]
 dev = [
-    "black>=24.0.0", # Python code formatter
-    "pip>=23.0",     # Package installer (good to have explicitly for venv)
-    "pytest>=7.0.0", # For running tests
-    "flake8>=7.0.0", # Python linter
-    # Add other development tools like linters (e.g., "ruff") here
+    "black>=24.0.0",
+    "pip>=23.0",
+    "pytest>=8.1.1",  
+    "pytest-cov",
+    "flake8>=7.0.0",
 ]
 
 # Example: Add a console script entry point if you build a CLI tool
@@ -36,3 +37,9 @@ target-version = ["py313"]
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]
+addopts = [
+    "-v",               
+    "--cov=src",        
+    "--cov-report=term" 
+]
+testpaths = ["test"]
