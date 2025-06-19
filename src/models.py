@@ -33,4 +33,4 @@ class Tool(BaseModel):
 
 class ConfigFile(BaseModel):
     version: str
-    runbooks: List[Tool]
+    tools: List[Tool]

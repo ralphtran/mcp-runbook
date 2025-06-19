@@ -1,14 +1,7 @@
 version: "1.0"
-runbooks:
-  - name: "test-runbook"
-    description: "Test Runbook"
-    steps:
-      - name: "Test Step"
-        command: "echo Hello World"
-version: "1.0"
-runbooks:
-  - name: "test-runbook"
-    description: "Test Runbook"
+tools:
+  - name: "test-tool"
+    description: "Test Tool"
     steps:
       - name: "Test Step"
         command: "echo Hello World"

@@ -28,7 +28,7 @@
           ];
           # Run shellHook to create virtual env and install dependencies with uv
           shellHook = ''
-            uv sync
+            uv sync --all-extras
             source .venv/bin/activate
           '';
         };

@@ -1,9 +1,10 @@
 import argparse
 from pathlib import Path
 from src.parser import Parser
+from src.server import setup_server, mcp
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="Runbook Config Processor"
     )
@@ -13,14 +14,25 @@ def main():
         required=True,
         help='Path to YAML config file'
     )
+    parser.add_argument(
+        '--server',
+        action='store_true',
+        help='Start MCP server mode'
+    )
     args = parser.parse_args()
 
     # Process config file
     config = Parser.parse_config(Path(args.file))
-    print(
-        "Successfully parsed config: Version "
-        f"{config.version}, {len(config.runbooks)} runbooks found"
-    )
+
+    if args.server:
+        setup_server(config)
+        print(f"🛫 Starting MCP server with {len(config.tools)} tools...")
+        mcp.run()
+    else:
+        print(
+            "✅ Successfully parsed config: Version "
+            f"{config.version}, {len(config.tools)} tools found"
+        )
 
 
 if __name__ == "__main__":

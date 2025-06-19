@@ -14,15 +14,18 @@ keywords = ["mcp", "mcp-server", "runbook", "builder"] # Optional
 
 dependencies = [
     "pyyaml", # For parsing the input YAML data
-    "pydantic>=2.0",  # For model validation
+    "pydantic>=2.0", # For model validation
+    "keyring", # For managing secrets # To use official mcp sdk
+    "mcp>=1.9.2", # For mcp server sdk
 ]
 
-[dependency-groups]
+[project.optional-dependencies]
 dev = [
     "black>=24.0.0",
     "pip>=23.0",
     "pytest>=8.1.1",  
     "pytest-cov",
+    "pytest-asyncio>=0.23.0",
     "flake8>=7.0.0",
 ]
 

@@ -1,6 +1,6 @@
-# `tools.yaml` Specification v0.1
+# `Runbook.yaml` Specification v0.1
 
-This document specifies the structure for a `tools.yaml` file. The file defines a collection of automated, multi-step tools that can be executed by a local runner. The design prioritizes simplicity, human readability, and a secure, `keyring`-based secret management workflow.
+This document specifies the structure for a `runbook.yaml` file. The file defines a collection of automated, multi-step tools that can be executed by a local runner. The design prioritizes simplicity, human readability, and a secure, `keyring`-based secret management workflow.
 
 ## Root Object
 
@@ -29,7 +29,7 @@ Each item in the `tools` list is a dictionary representing a single, runnable to
 | Key           | Type                      | Required? | Description                                                                            |
 |---------------|---------------------------|-----------|----------------------------------------------------------------------------------------|
 | `name`        | `string`                  | **Yes**   | A unique, machine-friendly identifier for the tool (e.g., `publish-package`).          |
-| `description` | `string`                  | No        | A clear, natural language description of what the tool accomplishes as a whole.        |
+| `description` | `string`                  | **Yes**        | A clear, natural language description of what the tool accomplishes as a whole.        |
 | `steps`       | `list` of `Step Object`   | **Yes**   | A list of command steps to be executed sequentially.                                   |
 | `parameters`  | `dictionary`              | No        | A dictionary defining the parameters the tool accepts.                                 |
 | `secrets`     | `list` of `Secret Object` | No        | A list of secrets required by the tool, fetched from the system keyring.               |
@@ -77,7 +77,7 @@ Defines secrets to be securely fetched from the system `keyring` and injected as
 
 ---
 
-## Complete `tools.yaml` Example
+## Complete `runbook.yaml` Example
 
 ```yaml
 version: "0.1"
