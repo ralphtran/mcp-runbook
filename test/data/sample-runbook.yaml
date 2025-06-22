@@ -1,0 +1,26 @@
+version: "1.0"
+tools:
+  - name: "sample-tool"
+    description: "Sample tool for testing and demonstration"
+    parameters:
+      SAMPLE_PARAM:
+        description: "Sample parameter for testing"
+        required: false
+        default: "default_value"
+    steps:
+      - name: "Greeting"
+        command: "echo \"Hello World! I'm a sample runbook. Parameter: {SAMPLE_PARAM}\""
+      - name: "List Project"
+        command: |
+          pwd
+          ls -l
+
+  - name: "tool-with-required-param"
+    description: "Tool that requires a parameter"
+    parameters:
+      REQUIRED_PARAM:
+        description: "A required parameter"
+        required: true
+    steps:
+      - name: "Print parameter"
+        command: "echo \"The parameter is {REQUIRED_PARAM}\""

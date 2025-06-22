@@ -1,8 +1,6 @@
 import pytest
-import asyncio
-import os
 import sys
-from unittest.mock import patch, MagicMock, AsyncMock
+from unittest.mock import patch, MagicMock, AsyncMock, call
 from src.server import setup_server, mcp
 from src.models import ConfigFile, Tool, Step, Secret
 
@@ -53,7 +51,25 @@ def test_setup_server_registration(mock_tool, minimal_config) -> None:
     setup_server(minimal_config)
 
     # mock_tool is the decorator
-    mock_tool.assert_called_once()
+    # We expect two calls per tool:
+    # 1. factory call to get decorator (mcp.tool())
+    # 2. decorator application (decorator(function))
+    factory_calls = [c for c in mock_tool.mock_calls if c[0] == '']
+    decorator_calls = [c for c in mock_tool.mock_calls if c[0] == '()']
+
+    assert len(factory_calls) == len(minimal_config.tools)
+    assert len(decorator_calls) == len(minimal_config.tools)
+
+    # Check factory call arguments
+    for i, tool in enumerate(minimal_config.tools):
+        assert factory_calls[i] == call(
+            name=tool.name, description=tool.description
+        )
+
+        # Check decorator was applied to a function
+        function_name = decorator_calls[i][1][0].__name__
+        assert function_name == f"tool_logic_{tool.name.replace('-', '_')}"
+
     # Tools are registered in src.server module
     import src.server
     assert hasattr(src.server, "test_tool")
@@ -62,21 +78,25 @@ def test_setup_server_registration(mock_tool, minimal_config) -> None:
 @pytest.mark.asyncio
 async def test_tool_execution(
     minimal_config,
-    mock_keyring,
-    mock_subprocess
+    mock_keyring
 ) -> None:
     """Test tool logic executes without errors"""
-    setup_server(minimal_config)
-    import src.server
-    test_tool = getattr(src.server, "test_tool")
+    with patch(
+        "src.server._execute_step",
+        new_callable=AsyncMock
+    ) as mock_execute_step:
+        setup_server(minimal_config)
+        import src.server
+        test_tool = getattr(src.server, "test_tool")
 
-    await test_tool(filename="test.txt", content="data")
+        await test_tool(filename="test.txt", content="data")
 
-    mock_keyring.assert_called_once_with("mcp-tools", "test_secret")
-    mock_subprocess.assert_called_once_with(
-        "echo hello",
-        cwd=os.getcwd(),
-        env={**os.environ, "TEST_SECRET": "test_secret"},
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE
-    )
+        mock_keyring.assert_called_once_with("mcp-tools", "test_secret")
+        mock_execute_step.assert_awaited_once()
+
+        # Check that base_env contains the secret
+        args, kwargs = mock_execute_step.call_args
+        # base_env is the fourth positional argument (index 3)
+        base_env = args[3]
+        secret_value = base_env['TEST_SECRET']
+        assert secret_value == 'test_secret'

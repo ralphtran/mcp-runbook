@@ -1,6 +1,6 @@
 # Development Tasks 
 
-## Task 1.1 Setup base projects
+## Task 1.1 Setup base projects (DONE)
 
 - Create [models.py](http://models.py) file in src/
     - Using pydantic library for model creation, refer to the Design for list of model and class
@@ -14,7 +14,7 @@
     - unit test for parser.py
     - integration test for [main.py](http://main.py) to read the -f from a sample yaml file
 
-## Task 1.2 Setup MCP server with Function Factory
+## Task 1.2 Setup MCP server with Function Factory (DONE)
 
 - Using the mcp library sdk in our project
 
@@ -44,3 +44,31 @@ mcp = FastMCP("My App")
         - Print the output that Step [<step number>/<total steps>] <step name> is running. Example: Step [1/5] Hello World is running
         - To avoid blocking call, program should use asyncio subprocess
 - In main.py, if there is a server flag like run with —server, then it will startup and mcp object with [mcp.run](http://mcp.run)() from server.py
+
+## Task 1.3 Setup MCP server visual testing tool with Inspector
+
+- Added Node.js v18 to development environment (flake.nix)
+- Created server launcher script `scripts/start-server.sh`
+- Added sample-runbook.yaml for testing
+
+To use MCP Inspector:
+1. Start the server in first terminal:
+```bash
+./scripts/start-server.sh
+```
+
+2. Run inspector in second terminal:
+```bash
+npx @modelcontextprotocol/inspector \
+  --directory . \
+  run -- python src/main.py --server -f test/data/sample-runbook.yaml
+```
+
+The Inspector UI will be available at http://localhost:3000
+
+## Task 1.4 Feature to run a tool from command-line
+- Add new command line flag --run that take a name of a tool and run that tool. Example: src/main.py -f test/data/sample-runbook.yaml --run sample-tool and it will run that tool
+  - If runbook has no tool with same name, then throw error and exit
+- Add test for that --run feature.
+- For validation, if --run and --server run together, it will trigger the runbook to run before starting the mcp server
+- Display the console output of the tool run in the subprocess for user to view. Example: if we run echo "Hello World", then we will expect to have Hello World
