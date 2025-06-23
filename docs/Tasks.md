@@ -59,9 +59,12 @@ To use MCP Inspector:
 
 2. Run inspector in second terminal:
 ```bash
-npx @modelcontextprotocol/inspector \
-  --directory . \
-  run -- python src/main.py --server -f test/data/sample-runbook.yaml
+npx @modelcontextprotocol/inspector 'uv --directory . run src/main.py --server -f test/data/sample-runbook.yaml'
+```
+
+3. Use the built-in mcp dev for FastMCP server
+```bash
+mcp dev examples/sample_server.py
 ```
 
 The Inspector UI will be available at http://localhost:3000

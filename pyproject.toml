@@ -16,7 +16,7 @@ dependencies = [
     "pyyaml", # For parsing the input YAML data
     "pydantic>=2.0", # For model validation
     "keyring", # For managing secrets # To use official mcp sdk
-    "mcp>=1.9.2", # For mcp server sdk
+    "mcp[cli]>=1.9.2", # For mcp server sdk
 ]
 
 [project.optional-dependencies]

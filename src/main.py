@@ -3,7 +3,6 @@ import asyncio
 import os
 import sys
 from pathlib import Path
-import anyio
 
 # Add parent directory to Python path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -56,7 +55,7 @@ def main() -> None:
         setup_server(config)
         print(f"🛫 Starting MCP server with {len(config.tools)} tools...")
         try:
-            anyio.run(mcp.run_stdio_async)
+            mcp.run(transport='stdio')
         except Exception as e:
             print(f"⛔ Server error: {str(e)}")
             sys.exit(1)
