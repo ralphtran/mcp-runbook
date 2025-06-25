@@ -75,3 +75,6 @@ The Inspector UI will be available at http://localhost:3000
 - Add test for that --run feature.
 - For validation, if --run and --server run together, it will trigger the runbook to run before starting the mcp server
 - Display the console output of the tool run in the subprocess for user to view. Example: if we run echo "Hello World", then we will expect to have Hello World
+
+## Task 1.5 Fix the return of running tools
+- When system running command, we need to return the stdout inside the function, so that MCP client can display the log progress

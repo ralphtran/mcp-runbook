@@ -72,7 +72,9 @@ async def _execute_step(
 
     cwd = step.cwd or tool.cwd or os.getcwd()
 
-    print(f"Step [{step_index}/{len(tool.steps)}] {step.name} is running")
+    print(
+        f"Step [{step_index}/{len(tool.steps)}] {step.name} is running"
+    )
 
     if stream_output:
         stdout_pipe = asyncio.subprocess.PIPE
@@ -156,8 +158,10 @@ def _decorate_and_register_tool(
     return decorated_func
 
 
-async def run_single_tool(tool: Tool) -> None:
-    """Execute all steps in a single tool without MCP server."""
+async def run_single_tool(tool: Tool) -> str:
+    """
+    Execute all steps in a single tool without MCP server and return output.
+    """
     secrets_env = _fetch_secrets(tool)
     # Build parameters dictionary from tool's parameters with default values
     parameters = {}
@@ -166,6 +170,7 @@ async def run_single_tool(tool: Tool) -> None:
             if param.default is not None:
                 parameters[name] = param.default
     base_env = {**os.environ, **secrets_env}
+    # We run each step, and the output is printed to stdout in real-time.
     for step_index, step in enumerate(tool.steps, start=1):
         await _execute_step(
             tool,
@@ -175,3 +180,5 @@ async def run_single_tool(tool: Tool) -> None:
             parameters,
             stream_output=True
         )
+    # Return an empty string because the output has already been printed.
+    return ""

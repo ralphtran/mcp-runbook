@@ -18,12 +18,12 @@ async def run_tool_async(config, tool_name: str) -> None:
         sys.exit(1)
 
     try:
-        await run_single_tool(tool)
+        output = await run_single_tool(tool)
+        print(output)
+        print(f"✅ Successfully executed tool '{tool_name}'")
     except Exception as e:
         print(f"⛔ Error running tool: {str(e)}")
         sys.exit(1)
-    print(f"✅ Successfully executed tool '{tool_name}'")
-    # Two blank lines needed after this section
 
 
 def main() -> None:

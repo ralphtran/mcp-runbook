@@ -24,7 +24,7 @@ from src.server import mcp, setup_server
 os.chdir(parent_dir)
 
 # Load the configuration
-config_file = Path("test/data/sample-runbook.yaml")
+config_file = Path("examples/sample-runbook.yaml")
 config = Parser.parse_config(config_file)
 
 # Set up the server

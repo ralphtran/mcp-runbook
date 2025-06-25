@@ -19,15 +19,16 @@ def test_valid_config_file():
 def test_sample_runbook_config_file():
     """Test the sample runbook configuration file is valid."""
     python = sys.executable
-    config_path = TEST_DATA / "sample-runbook.yaml"
+    config = Path(__file__).parent.parent / "examples/sample-runbook.yaml"
     result = subprocess.run(
-        [python, "-m", "src.main", "-f", str(config_path)],
+        [python, "-m", "src.main", "-f", str(config), "--run", "sample-tool"],
         capture_output=True,
         text=True
     )
     assert result.returncode == 0
     assert result.returncode == 0
-    assert "Successfully parsed config" in result.stdout
+    assert "Step [1/2] Greeting is running" in result.stdout
+    assert "Step [2/2] List Project is running" in result.stdout
 
 
 def test_missing_config_file():
