@@ -24,6 +24,7 @@
           buildInputs = [
             pythonPkgs.python        # Python 3.13
             pkgs.uv                  # For dependencies management
+            pkgs.nodejs_22           # For MCP Inspector
           ];
           # Run shellHook to create virtual env and install dependencies with uv
           shellHook = ''

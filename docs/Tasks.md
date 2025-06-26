@@ -78,3 +78,4 @@ The Inspector UI will be available at http://localhost:3000
 
 ## Task 1.5 Fix the return of running tools
 - When system running command, we need to return the stdout inside the function, so that MCP client can display the log progress
+  - tool_logic_inner should capture the output and return the stdout so that MCP client can view the processing return

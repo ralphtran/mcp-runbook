@@ -1,9 +1,13 @@
 import asyncio
+import logging
 import keyring
 import os
 from typing import Any, Callable, Coroutine, Dict
 from mcp.server.fastmcp import FastMCP
 from src.models import ConfigFile, Tool, Step
+
+# Set up logger for this module
+logger = logging.getLogger(__name__)
 
 mcp = FastMCP("MCP Server Runbook")
 
@@ -21,13 +25,19 @@ def _create_tool_logic(
     """Create the tool logic function for a given tool configuration."""
     normalized_name = tool.name.replace("-", "_")
 
-    async def tool_logic_inner(**parameters: Dict[str, str]) -> None:
-        """Execute the steps for a tool with given parameters."""
+    async def tool_logic_inner(
+        **parameters: Dict[str, str]
+    ) -> str:
+        """
+        Execute the steps for a tool with given parameters and return output.
+        """
+        logger.info(f"🔧 Starting tool {tool.name} with parameters: \
+                    {parameters}")
         secrets_env = _fetch_secrets(tool)
         base_env = {**os.environ, **secrets_env}
-
+        output_lines = []
         for i, step in enumerate(tool.steps, start=1):
-            await _execute_step(
+            step_output = await _execute_step(
                 tool,
                 step,
                 i,
@@ -35,6 +45,17 @@ def _create_tool_logic(
                 parameters,
                 stream_output=False
             )
+            # In non-streaming mode, we've captured stdout_output as a string
+            if step_output:
+                output_lines.append(str(step_output))
+
+        result = '\n'.join(output_lines)
+
+        # Log the first 100 characters of output to avoid flooding logs
+        result_preview = result[:100] + ("..." if len(result) > 100 else "")
+        logger.info(f"✅ Completed tool {tool.name}. Output: {result_preview}")
+
+        return result
 
     # Set the function's __name__ before decoration
     tool_logic_inner.__name__ = f"tool_logic_{normalized_name}"
@@ -80,7 +101,7 @@ async def _execute_step(
         stdout_pipe = asyncio.subprocess.PIPE
         stderr_pipe = asyncio.subprocess.PIPE
     else:
-        stdout_pipe = asyncio.subprocess.DEVNULL
+        stdout_pipe = asyncio.subprocess.PIPE
         stderr_pipe = asyncio.subprocess.PIPE
 
     proc = await asyncio.create_subprocess_shell(
@@ -93,55 +114,56 @@ async def _execute_step(
 
     if stream_output:
         # Read stdout and stderr in real-time
-        stdout_lines = []
-        stderr_lines = []
+        # Capture both stdout and stderr separately
+        stdout_io = []
+        stderr_io = []
 
-        async def read_stream(stream, buffer, console_identifier=''):
-            """Read lines from stream and buffer/print them."""
-            output_lines = []
+        async def capture_stream(stream, buffer, prefix=''):
+            """Capture and prefix lines from a stream."""
             while True:
                 line = await stream.readline()
                 if not line:
-                    break
+                    return
                 line_str = line.decode().strip()
-                output_lines.append(line_str)
                 buffer.append(line_str)
-                print(f"{console_identifier}{line_str}")
-            return output_lines
+                print(f"{prefix}{line_str}")
 
-        # Start reading both streams concurrently
+        # Create tasks to concurrently capture both stdout and stderr
         stdout_task = asyncio.create_task(
-            read_stream(proc.stdout, stdout_lines, '[stdout] ')
+            capture_stream(proc.stdout, stdout_io, '[stdout] ')
         )
         stderr_task = asyncio.create_task(
-            read_stream(proc.stderr, stderr_lines, '[stderr] ')
+            capture_stream(proc.stderr, stderr_io, '[stderr] ')
         )
 
-        # Wait for both stread to finish
-        await asyncio.wait(
-            [stdout_task, stderr_task],
-            return_when=asyncio.ALL_COMPLETED
-        )
-
-        # Wait for process to exit after streams
+        # Wait for both streams to finish capturing
+        await asyncio.wait([stdout_task, stderr_task])
         returncode = await proc.wait()
+        stdout_output = '\n'.join(stdout_io)
     else:
         # Non-streaming mode: wait for process to complete and capture output
         stdout, stderr = await proc.communicate()
         returncode = proc.returncode
+        stdout_output = stdout.decode().strip() if stdout else ""
 
     if returncode != 0:
         if stream_output:
             # Collect complete stderr from buffer
-            error_msg = '\n'.join(stderr_lines) \
-                if stderr_lines else f"exit code {returncode}"
+            if stderr_io:
+                error_msg = '\n'.join(stderr_io)
+            else:
+                error_msg = f"exit code {returncode}"
         else:
             # Capture stderr from non-streaming mode
-            error_msg = stderr.decode() \
-                if stderr else f"exit code {returncode}"
+            if stderr:
+                error_msg = stderr.decode()
+            else:
+                error_msg = f"exit code {returncode}"
         raise RuntimeError(
             f"⛔ Step {step_index} failed: {error_msg}"
         )
+
+    return stdout_output
 
 
 def _decorate_and_register_tool(
@@ -155,6 +177,10 @@ def _decorate_and_register_tool(
     sanitized_name = tool.name.replace("-", "_")
     # Do NOT override the function name - preserve the dynamically set name
     globals()[sanitized_name] = decorated_func
+
+    # Log the tool registration
+    logger.info(f"📋 Registered tool: {tool.name} with description: \
+                {tool.description}")
     return decorated_func
 
 
@@ -162,6 +188,7 @@ async def run_single_tool(tool: Tool) -> str:
     """
     Execute all steps in a single tool without MCP server and return output.
     """
+    logger.info(f"🔧 Starting CLI execution of tool: {tool.name}")
     secrets_env = _fetch_secrets(tool)
     # Build parameters dictionary from tool's parameters with default values
     parameters = {}
@@ -171,8 +198,9 @@ async def run_single_tool(tool: Tool) -> str:
                 parameters[name] = param.default
     base_env = {**os.environ, **secrets_env}
     # We run each step, and the output is printed to stdout in real-time.
+    output_lines = []
     for step_index, step in enumerate(tool.steps, start=1):
-        await _execute_step(
+        step_output = await _execute_step(
             tool,
             step,
             step_index,
@@ -180,5 +208,9 @@ async def run_single_tool(tool: Tool) -> str:
             parameters,
             stream_output=True
         )
-    # Return an empty string because the output has already been printed.
-    return ""
+        if step_output:
+            output_lines.append(str(step_output))
+
+    result = '\n'.join(output_lines)
+    logger.info(f"✅ Completed CLI execution of tool: {tool.name}")
+    return result
