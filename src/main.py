@@ -3,6 +3,7 @@ import asyncio
 import os
 import sys
 from pathlib import Path
+from typing import Dict
 
 # Add parent directory to Python path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -11,14 +12,18 @@ from src.parser import Parser  # noqa: E402
 from src.server import setup_server, mcp, run_single_tool  # noqa: E402
 
 
-async def run_tool_async(config, tool_name: str) -> None:
+async def run_tool_async(
+    config,
+    tool_name: str,
+    parameters: Dict[str, str]
+) -> None:
     tool = next((t for t in config.tools if t.name == tool_name), None)
     if not tool:
         print(f"❌ Tool '{tool_name}' not found in configuration")
         sys.exit(1)
 
     try:
-        output = await run_single_tool(tool)
+        output = await run_single_tool(tool, parameters)
         print(output)
         print(f"✅ Successfully executed tool '{tool_name}'")
     except Exception as e:
@@ -46,6 +51,11 @@ def main() -> None:
         type=str,
         help='Run a specific tool by name'
     )
+    parser.add_argument(
+        '--args',
+        nargs='*',
+        help='Arguments for the tool in key=value format'
+    )
     args = parser.parse_args()
 
     # Process config file
@@ -61,13 +71,21 @@ def main() -> None:
             sys.exit(1)
 
     elif args.run:
-        asyncio.run(run_tool_async(config, args.run))
+        # Parse key-value arguments
+        params = {}
+        if args.args:
+            for arg in args.args:
+                if '=' in arg:
+                    key, value = arg.split('=', 1)
+                    params[key] = value
+                else:
+                    print(f"⚠️ Ignoring invalid argument: {arg}.")
+                    print("Use key=value format")
+        asyncio.run(run_tool_async(config, args.run, params))
 
     else:
-        print(
-            "✅ Successfully parsed config: Version "
-            f"{config.version}, {len(config.tools)} tools found"
-        )
+        print("✅ Successfully parsed config: Version " +
+              f"{config.version}, {len(config.tools)} tools found")
 
 
 if __name__ == "__main__":

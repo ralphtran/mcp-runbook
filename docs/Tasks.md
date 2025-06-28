@@ -79,3 +79,10 @@ The Inspector UI will be available at http://localhost:3000
 ## Task 1.5 Fix the return of running tools
 - When system running command, we need to return the stdout inside the function, so that MCP client can display the log progress
   - tool_logic_inner should capture the output and return the stdout so that MCP client can view the processing return
+
+## Task#1.6 Use jinja for parameter in MCP Server
+- Add jinja2 as library into the project
+- The `command` in the `steps` should allow parameter to use jinja syntaxt. Example: if we have parameter `name` and command `echo 'Hello {{ name }}'`, then system should use jinja to change it to correct name.
+- In sample-runbook.yaml, change the required parameter to `name` and use command `echo 'Hello {{ name }}'`. Change the tools name to `hello-name`
+- When running as single tool using the --run parameter, if there is a required parameter, then user need to add it using the --args. Example: uv src/main.py -f examples/sample-runbook.yaml --run hello-name --args name=DummyName and we expect to have a Hello DummyName print out
+- When running as `mcp`, the parameter name should be an argument inside the `tool_logic_inner`. This allow mcp wrapper logic to detect the required parameter for mcp client to prompt user to input. Example: for tool `hello-name`, it should be similar to inner function `hello_name(name: Str)` where name is an argument of function

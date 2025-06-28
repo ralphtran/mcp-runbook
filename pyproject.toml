@@ -17,6 +17,7 @@ dependencies = [
     "pydantic>=2.0", # For model validation
     "keyring", # For managing secrets # To use official mcp sdk
     "mcp[cli]>=1.9.2", # For mcp server sdk
+    "jinja2>=3.0.0", # For templating the command with parameters
 ]
 
 [project.optional-dependencies]

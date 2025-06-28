@@ -10,12 +10,12 @@ tools:
           pwd
           ls -l
 
-  - name: tool-with-required-param
-    description: Tool that requires a parameter
+  - name: hello-name
+    description: Tool that requires a name parameter
     parameters:
-      REQUIRED_PARAM:
-        description: "A required parameter"
+      name:
+        description: "The name to greet"
         required: true
     steps:
-      - name: Print parameter
-        command: echo "The parameter is {REQUIRED_PARAM}"
+      - name: Print greeting
+        command: echo "Hello {{ name }}"

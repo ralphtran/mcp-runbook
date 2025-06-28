@@ -5,6 +5,7 @@ import os
 from typing import Any, Callable, Coroutine, Dict
 from mcp.server.fastmcp import FastMCP
 from src.models import ConfigFile, Tool, Step
+from jinja2 import Environment, StrictUndefined
 
 # Set up logger for this module
 logger = logging.getLogger(__name__)
@@ -89,7 +90,9 @@ async def _execute_step(
     if step.env:
         step_env.update(step.env)
 
-    resolved_cmd = step.command.format(**parameters)
+    # Render command as Jinja2 template with strict undefined handling
+    template = Environment(undefined=StrictUndefined).from_string(step.command)
+    resolved_cmd = template.render(parameters)
 
     cwd = step.cwd or tool.cwd or os.getcwd()
 
@@ -184,17 +187,21 @@ def _decorate_and_register_tool(
     return decorated_func
 
 
-async def run_single_tool(tool: Tool) -> str:
+async def run_single_tool(tool: Tool, user_parameters: Dict[str, str]) -> str:
     """
     Execute all steps in a single tool without MCP server and return output.
     """
     logger.info(f"🔧 Starting CLI execution of tool: {tool.name}")
     secrets_env = _fetch_secrets(tool)
-    # Build parameters dictionary from tool's parameters with default values
+    # Merge default parameters with user provided parameters
     parameters = {}
     if tool.parameters:
         for name, param in tool.parameters.items():
-            if param.default is not None:
+            # First use user-provided value
+            if name in user_parameters:
+                parameters[name] = user_parameters[name]
+            # Otherwise use default if available
+            elif param.default is not None:
                 parameters[name] = param.default
     base_env = {**os.environ, **secrets_env}
     # We run each step, and the output is printed to stdout in real-time.
