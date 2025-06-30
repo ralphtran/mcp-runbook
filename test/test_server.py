@@ -1,8 +1,10 @@
 import pytest
 import sys
+from pathlib import Path
 from unittest.mock import patch, MagicMock, AsyncMock, call
 from src.server import setup_server, mcp
 from src.models import ConfigFile, Tool, Step, Secret
+from src.parser import Parser
 
 
 @pytest.fixture(autouse=True)
@@ -89,7 +91,7 @@ async def test_tool_execution(
         import src.server
         test_tool = getattr(src.server, "test_tool")
 
-        await test_tool(filename="test.txt", content="data")
+        await test_tool()
 
         mock_keyring.assert_called_once_with("mcp-tools", "test_secret")
         mock_execute_step.assert_awaited_once()
@@ -100,3 +102,40 @@ async def test_tool_execution(
         base_env = args[3]
         secret_value = base_env['TEST_SECRET']
         assert secret_value == 'test_secret'
+
+
+@patch("src.server._execute_step", new_callable=AsyncMock)
+@pytest.mark.asyncio
+async def test_hello_name_tool_parameters(
+    mock_execute_step,
+):
+    """Test tool uses parameters via inspect signatures"""
+    sample_runbook = (
+        Path(__file__).parent.parent /
+        "examples" / "sample-runbook.yaml"
+    )
+    config = Parser.parse_config(sample_runbook)
+
+    # Set up server to create dynamic functions
+    setup_server(config)
+
+    # Get the dynamically created function
+    import src.server
+    hello_name_tool = getattr(src.server, "hello_name", None)
+    assert hello_name_tool, "Tool function 'hello_name' not found"
+
+    # Configure mock to return expected output
+    mock_execute_step.return_value = "Hello TestUser"
+
+    # Call the function with a parameter
+    result = await hello_name_tool(name="TestUser")
+
+    # Verify the call was made with expected environment
+    mock_execute_step.assert_called_once()
+    args, kwargs = mock_execute_step.call_args
+    parameters = args[4]  # parameters is fifth argument in _execute_step
+    assert parameters == {"name": "TestUser"}, \
+        "Parameters were not passed correctly"
+
+    # Verify tool returned expected output
+    assert result == "Hello TestUser"

@@ -239,3 +239,167 @@ Result from call: Wrote 15 characters to data.csv.
 Function Name: _base_logic_for_task
 Docstring: This is the core logic for our dynamic task.
 ```
+
+# Function Factory wrapper with arguments and `inspect` module
+Excellent question! This is a more advanced and very practical use case for function factories. You're moving from a generic `**kwargs` interface to a specific, self-documenting, and type-hinted function signature.
+
+The standard and **strongly suggested way** to achieve this is by using Python's built-in `inspect` module. You can dynamically build a function signature and attach it to a wrapper function.
+
+This approach is far superior to using `exec()` because it's safer, cleaner, and works well with linters, type checkers (like Mypy), and IDEs.
+
+### The Goal
+
+-   **Start with:** A generic async function that takes a dictionary: `async def tool_logic_inner(**parameters: Dict[str, str])`
+-   **End with:** A specific async function that *looks and feels* like a normal function: `async def hello_name(name: str) -> str`
+
+### The Strategy: Using `inspect.Signature`
+
+1.  **Define the Core Logic:** Keep your generic function that operates on the `parameters` dictionary. This separates the *implementation* from the *interface*.
+2.  **Create a Factory Function:** This factory will take the desired function name, its parameters (name and type), and a docstring.
+3.  **Build the Signature:** Inside the factory, use `inspect.Parameter` to define each argument and `inspect.Signature` to combine them.
+4.  **Create a Wrapper:** Define a simple `async def wrapper(*args, **kwargs)` function. This wrapper's job is to translate the user-friendly arguments into the dictionary format your core logic expects.
+5.  **Apply the Signature:** Assign the dynamically created signature to the wrapper's `__signature__` attribute. Also set its `__name__` and `__doc__`.
+6.  **Return the Wrapper:** The factory returns this new, beautified wrapper function.
+
+---
+
+### Complete Code Example
+
+Let's build a factory called `create_tool_function` that does exactly this.
+
+```python
+import inspect
+from typing import Dict, Any, Callable, Coroutine
+
+# 1. THE CORE LOGIC
+# This is your generic implementation. It's kept separate and only deals with a dictionary.
+async def _core_tool_logic(**parameters: str) -> str:
+    """The actual implementation logic for various tools."""
+    
+    # Example logic for a "hello_name" tool
+    if "name" in parameters:
+        name = parameters["name"]
+        return f"Hello, {name}! It's a pleasure to meet you."
+    
+    # Example logic for another tool
+    if "item" in parameters and "quantity" in parameters:
+        item = parameters['item']
+        quantity = parameters['quantity']
+        return f"Confirmed: Order placed for {quantity} of {item}."
+        
+    return "Error: Could not execute the tool with the given parameters."
+
+
+# 2. THE FUNCTION FACTORY
+def create_tool_function(
+    name: str,
+    params: Dict[str, Any],
+    docstring: str = "",
+) -> Callable[..., Coroutine[Any, Any, str]]:
+    """
+    Factory to create a specific, nicely-signatured async tool function.
+
+    Args:
+        name (str): The desired name for the new function.
+        params (Dict[str, Any]): A dictionary mapping parameter names to their types.
+                                 Example: {'name': str, 'age': int}
+        docstring (str): The docstring for the new function.
+
+    Returns:
+        A new async function with a specific signature that calls the core logic.
+    """
+    # 3. Build the list of inspect.Parameter objects from the params dict
+    signature_params = [
+        inspect.Parameter(
+            name=param_name,
+            kind=inspect.Parameter.POSITIONAL_OR_KEYWORD, # Standard parameter type
+            annotation=param_type
+        ) for param_name, param_type in params.items()
+    ]
+    
+    # Create the full signature object
+    new_signature = inspect.Signature(signature_params)
+
+    # 4. Create the wrapper function that will be returned
+    async def wrapper(*args, **kwargs) -> str:
+        """A dynamically generated wrapper."""
+        # This binds the incoming args/kwargs to the signature we created.
+        # It normalizes the arguments into a single dictionary, which is perfect
+        # for our core logic function. It also validates the arguments!
+        bound_args = new_signature.bind(*args, **kwargs)
+        bound_args.apply_defaults()
+        
+        # Call the generic core logic with the prepared dictionary of arguments
+        return await _core_tool_logic(**bound_args.arguments)
+
+    # 5. Apply the new signature and metadata to the wrapper
+    wrapper.__name__ = name
+    wrapper.__doc__ = docstring
+    wrapper.__signature__ = new_signature
+    
+    # 6. Return the finished, user-friendly function
+    return wrapper
+
+# --- How to use the factory ---
+
+# Create the 'hello_name' function
+hello_name = create_tool_function(
+    name="hello_name",
+    params={"name": str},
+    docstring="Greets the user by their name."
+)
+
+# Create another, more complex tool function from the same core logic
+order_item = create_tool_function(
+    name="order_item",
+    params={"item": str, "quantity": int}, # Note: core logic treats it as str, but signature shows int
+    docstring="Places an order for a given quantity of an item."
+)
+
+# --- Now, let's test our new functions ---
+
+import asyncio
+
+async def main():
+    # Test the first function
+    # You can call it like a normal function with keyword arguments
+    result1 = await hello_name(name="Alice")
+    print(result1) # Output: Hello, Alice! It's a pleasure to meet you.
+    
+    # Test the second function
+    result2 = await order_item(item="Laptop", quantity=2)
+    print(result2) # Output: Confirmed: Order placed for 2 of Laptop.
+
+    # --- Let's inspect the functions to prove it worked ---
+    print("-" * 20)
+    
+    # Check the signature of hello_name
+    print(f"Function: {hello_name.__name__}")
+    print(f"Signature: {inspect.signature(hello_name)}")
+    print(f"Docstring: {hello_name.__doc__}")
+
+    print("-" * 20)
+    
+    # Check the signature of order_item
+    print(f"Function: {order_item.__name__}")
+    print(f"Signature: {inspect.signature(order_item)}")
+    print(f"Docstring: {order_item.__doc__}")
+
+    # It even raises a proper TypeError if you call it incorrectly!
+    try:
+        await hello_name(wrong_param="Bob")
+    except TypeError as e:
+        print(f"\nCaught expected error: {e}")
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+### Why This Is The Suggested Way
+
+1.  **IDE and Tooling Friendly:** Your IDE (like VS Code or PyCharm), static analyzers (Mypy), and linters will recognize the new signature. You get autocompletion, type checking, and parameter validation for free.
+2.  **Self-Documenting API:** Calling `help(hello_name)` or `inspect.signature(hello_name)` shows the *real*, user-facing signature, not a generic `**kwargs`. This makes your code much easier to use and understand.
+3.  **Safety and Robustness:** `new_signature.bind()` automatically validates that the function was called with the correct arguments, raising a `TypeError` if not. This is much safer than manually digging through a `kwargs` dictionary.
+4.  **Separation of Concerns:** The `_core_tool_logic` contains the business logic, while `create_tool_function` handles the presentation and interface. This makes your code cleaner and easier to maintain.
+5.  **No `exec()`:** It avoids the security risks, debugging nightmares, and performance overhead of building and executing code strings with `exec()`.

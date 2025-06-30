@@ -1,8 +1,9 @@
 import asyncio
+import inspect
 import logging
 import keyring
 import os
-from typing import Any, Callable, Coroutine, Dict
+from typing import Any, Callable, Coroutine, Dict, List
 from mcp.server.fastmcp import FastMCP
 from src.models import ConfigFile, Tool, Step
 from jinja2 import Environment, StrictUndefined
@@ -20,9 +21,58 @@ def setup_server(config_file: ConfigFile) -> None:
         _decorate_and_register_tool(tool, tool_logic)
 
 
+def _create_tool_function_with_signature(
+    tool: Tool,
+    tool_logic_inner: Callable[
+        ..., Coroutine[Any, Any, str]
+    ]
+) -> Callable[..., Coroutine[Any, Any, str]]:
+    """Create a tool function with the correct signature based on
+    the tool's parameters.
+
+    If the tool has parameters, build a wrapper function with the
+    correct signature and annotations. Otherwise, return the inner
+    function as-is.
+    """
+    # Build the list of Parameter objects for the function signature
+    param_list: List[inspect.Parameter] = []
+    if tool.parameters:
+        for param_name, param in tool.parameters.items():
+            default = (
+                param.default
+                if param.default is not None
+                else inspect.Parameter.empty
+            )
+            parameter = inspect.Parameter(
+                param_name,
+                inspect.Parameter.POSITIONAL_OR_KEYWORD,
+                default=default,
+                annotation=str
+            )
+            param_list.append(parameter)
+
+    signature = inspect.Signature(param_list)
+
+    async def wrapper(*args, **kwargs) -> str:
+        # Bind parameters to the signature
+        bound = signature.bind(*args, **kwargs)
+        # Apply default for missing values
+        bound.apply_defaults()
+        parameters_dict = bound.arguments
+        # Call the inner function with the collected arguments
+        return await tool_logic_inner(**parameters_dict)
+
+    # Set details on wrapper
+    wrapper.__name__ = tool_logic_inner.__name__
+    wrapper.__doc__ = tool.description
+    wrapper.__signature__ = signature
+
+    return wrapper
+
+
 def _create_tool_logic(
     tool: Tool
-) -> Callable[..., Coroutine[Any, Any, None]]:
+) -> Callable[..., Coroutine[Any, Any, str]]:
     """Create the tool logic function for a given tool configuration."""
     normalized_name = tool.name.replace("-", "_")
 
@@ -32,8 +82,10 @@ def _create_tool_logic(
         """
         Execute the steps for a tool with given parameters and return output.
         """
-        logger.info(f"🔧 Starting tool {tool.name} with parameters: \
-                    {parameters}")
+        logger.info(
+            f"🔧 Starting tool {tool.name} with parameters: "
+            f"{parameters}"
+        )
         secrets_env = _fetch_secrets(tool)
         base_env = {**os.environ, **secrets_env}
         output_lines = []
@@ -54,13 +106,23 @@ def _create_tool_logic(
 
         # Log the first 100 characters of output to avoid flooding logs
         result_preview = result[:100] + ("..." if len(result) > 100 else "")
-        logger.info(f"✅ Completed tool {tool.name}. Output: {result_preview}")
+        msg = (
+            f"✅ Completed tool {tool.name}."
+            f" Output: {result_preview}"
+        )
+        logger.info(msg)
 
         return result
 
     # Set the function's __name__ before decoration
     tool_logic_inner.__name__ = f"tool_logic_{normalized_name}"
-    return tool_logic_inner
+
+    # Create a wrapper that has the correct signature for the tool parameters
+    # If there are no parameters in the tool, tool_logic_inner will get called
+    # with an empty dict.
+    return _create_tool_function_with_signature(
+        tool, tool_logic_inner
+    )
 
 
 def _fetch_secrets(tool: Tool) -> Dict[str, str]:
@@ -182,8 +244,10 @@ def _decorate_and_register_tool(
     globals()[sanitized_name] = decorated_func
 
     # Log the tool registration
-    logger.info(f"📋 Registered tool: {tool.name} with description: \
-                {tool.description}")
+    logger.info(
+        f"📋 Registered tool: {tool.name} "
+        f"with description: {tool.description}"
+    )
     return decorated_func
 
 
@@ -191,7 +255,9 @@ async def run_single_tool(tool: Tool, user_parameters: Dict[str, str]) -> str:
     """
     Execute all steps in a single tool without MCP server and return output.
     """
-    logger.info(f"🔧 Starting CLI execution of tool: {tool.name}")
+    logger.info(
+        f"🔧 Starting CLI execution of tool: {tool.name}"
+    )
     secrets_env = _fetch_secrets(tool)
     # Merge default parameters with user provided parameters
     parameters = {}
@@ -219,5 +285,7 @@ async def run_single_tool(tool: Tool, user_parameters: Dict[str, str]) -> str:
             output_lines.append(str(step_output))
 
     result = '\n'.join(output_lines)
-    logger.info(f"✅ Completed CLI execution of tool: {tool.name}")
+    logger.info(
+        f"✅ Completed CLI execution of tool: {tool.name}"
+    )
     return result
