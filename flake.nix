@@ -16,6 +16,13 @@
         };
         # Define the Python version to use
         pythonPkgs = pkgs.python313.pkgs;
+        # Create a custom 'check' script
+        checkScript = pkgs.writeShellScriptBin "check" ''
+          source .venv/bin/activate
+          ruff format
+          ruff check
+          pytest -v
+        '';
       in {
         # Development Shell accessible via `nix develop`
         devShells.default = pkgs.mkShell {
@@ -25,6 +32,7 @@
             pythonPkgs.python        # Python 3.13
             pkgs.uv                  # For dependencies management
             pkgs.nodejs_22           # For MCP Inspector
+            checkScript               # Add custom check script
           ];
           # Run shellHook to create virtual env and install dependencies with uv
           shellHook = ''
