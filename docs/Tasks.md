@@ -89,3 +89,6 @@ The Inspector UI will be available at http://localhost:3000
 ### 1.6.2 Implement Functiona Factory with inspect module
 - Refer to the `Function Factory wrapper with arguments and `inspect` module` to use inspect module to achive this requirement. This require a wrapper function to bind the param and add __signature__ and __doc__ to that wrapper function.
   - Create a separate logic to create the wrapper function. System should have unit test to test the new wrapper function created successfully. For example, in unit test, we can expect that after parsing runbook yaml file, we will can run `hello-name('Dummy Name')` sucessfully
+
+## Task#1.7 Refactor, cleanup and improvement
+- Add ruff for linting and formatting. Remove black and flake8. This help the system to run faster and less manual fix

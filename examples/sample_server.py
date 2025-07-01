@@ -11,24 +11,41 @@ It sets up the server and exposes it as a global variable 'server'.
 from pathlib import Path
 import os
 import sys
+import asyncio
 
-# Add parent directory to Python path to import src modules
-current_dir = Path(__file__).parent.resolve()
-parent_dir = current_dir.parent
-sys.path.insert(0, str(parent_dir))
 
-from src.parser import Parser
-from src.server import mcp, setup_server
+def main():
+    """Main function to run the sample server."""
+    current_dir = Path(__file__).parent.resolve()
+    parent_dir = current_dir.parent
 
-# Change working directory to repository root
-os.chdir(parent_dir)
+    # Add parent directory to sys.path for imports
+    sys.path.insert(0, str(parent_dir))
 
-# Load the configuration
-config_file = Path("examples/sample-runbook.yaml")
-config = Parser.parse_config(config_file)
+    # Change working directory to repository root
+    os.chdir(parent_dir)
 
-# Set up the server
-setup_server(config)
+    # Import after setting base directory
+    from src.parser import Parser
+    from src.server import mcp, setup_server
 
-# Expose the server object for MCP CLI as "server"
-server = mcp
+    # Load the configuration using absolute path
+    config_file = Path("examples/sample-runbook.yaml")
+    config = Parser.parse_config(config_file)
+
+    # Set up the server
+    setup_server(config)
+
+    # Expose the server object for MCP CLI as "server"
+    server = mcp
+    return server
+
+
+# Expose server as global
+server = main()
+
+# When run directly, start the server
+if __name__ == "__main__":
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop.run_until_complete(server.serve())

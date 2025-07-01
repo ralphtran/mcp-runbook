@@ -22,12 +22,11 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-    "black>=24.0.0",
     "pip>=23.0",
     "pytest>=8.1.1",  
     "pytest-cov",
     "pytest-asyncio>=0.23.0",
-    "flake8>=7.0.0",
+    "ruff>=0.12.1",
 ]
 
 # Example: Add a console script entry point if you build a CLI tool
@@ -35,9 +34,10 @@ dev = [
 # resume-build = "resume_builder.cli:main"
 
 # Configuration for tools like Black
-[tool.black]
+[tool.ruff]
 line-length = 88
-target-version = ["py313"]
+indent-width = 4
+target-version = "py312"
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]

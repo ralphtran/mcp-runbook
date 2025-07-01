@@ -10,7 +10,7 @@ def test_valid_config_file():
     result = subprocess.run(
         [python, "-m", "src.main", "-f", str(TEST_DATA / "valid.yaml")],
         capture_output=True,
-        text=True
+        text=True,
     )
     assert result.returncode == 0
     assert "Successfully parsed config" in result.stdout
@@ -23,7 +23,7 @@ def test_sample_runbook_config_file():
     result = subprocess.run(
         [python, "-m", "src.main", "-f", str(config), "--run", "sample-tool"],
         capture_output=True,
-        text=True
+        text=True,
     )
     assert result.returncode == 0
     assert result.returncode == 0
@@ -34,8 +34,6 @@ def test_sample_runbook_config_file():
 def test_missing_config_file():
     python = sys.executable
     result = subprocess.run(
-        [python, "-m", "src.main", "-f", "missing.yaml"],
-        capture_output=True,
-        text=True
+        [python, "-m", "src.main", "-f", "missing.yaml"], capture_output=True, text=True
     )
     assert result.returncode != 0
