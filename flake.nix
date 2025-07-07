@@ -16,12 +16,15 @@
         };
         # Define the Python version to use
         pythonPkgs = pkgs.python313.pkgs;
-        # Create a custom 'check' script
+        # Create custom scripts
         checkScript = pkgs.writeShellScriptBin "check" ''
           source .venv/bin/activate
           ruff format
           ruff check
           pytest -v
+        '';
+        aiScript = pkgs.writeShellScriptBin "ai" ''
+          aider --test-cmd "nix develop -c check" --read docs/Conventions.md flake.nix
         '';
       in {
         # Development Shell accessible via `nix develop`
@@ -33,6 +36,7 @@
             pkgs.uv                  # For dependencies management
             pkgs.nodejs_22           # For MCP Inspector
             checkScript               # Add custom check script
+            aiScript                  # Add AI assistant script
           ];
           # Run shellHook to create virtual env and install dependencies with uv
           shellHook = ''
