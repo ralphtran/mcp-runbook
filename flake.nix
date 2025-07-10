@@ -26,6 +26,9 @@
         aiScript = pkgs.writeShellScriptBin "ai" ''
           aider --test-cmd "nix develop -c check" --read docs/Conventions.md flake.nix
         '';
+        ghPushScript = pkgs.writeShellScriptBin "push" ''
+          git push gh proj/mcp-runbook:main
+        '';
       in {
         # Development Shell accessible via `nix develop`
         devShells.default = pkgs.mkShell {
@@ -35,8 +38,9 @@
             pythonPkgs.python        # Python 3.13
             pkgs.uv                  # For dependencies management
             pkgs.nodejs_22           # For MCP Inspector
-            checkScript               # Add custom check script
-            aiScript                  # Add AI assistant script
+            checkScript              # Add custom check script
+            aiScript                 # Add AI assistant script
+            ghPushScript             # Add push to Github script
           ];
           # Run shellHook to create virtual env and install dependencies with uv
           shellHook = ''
