@@ -1,17 +1,13 @@
 [project]
-name = "mcp-server-runbook"
+name = "mcp-runbook"
 version = "0.1.0"
 description = "A helper tools to config Runbook for MCP Client to run"
-readme = "README.md" # Optional: create a README.md file
 requires-python = ">=3.12"
 license = { text = "MIT" } # Optional: choose a license
-
 authors = [
   { name = "Ralph Tran", email = "ralphtran.sg@gmail.com" },
 ]
-
 keywords = ["mcp", "mcp-server", "runbook", "builder"] # Optional
-
 dependencies = [
     "pyyaml", # For parsing the input YAML data
     "pydantic>=2.0", # For model validation
@@ -20,18 +16,21 @@ dependencies = [
     "jinja2>=3.0.0", # For templating the command with parameters
 ]
 
-[project.optional-dependencies]
+[dependency-groups]
 dev = [
-    "pip>=23.0",
-    "pytest>=8.1.1",  
+    "pytest>=8.1.1",
     "pytest-cov",
     "pytest-asyncio>=0.23.0",
     "ruff>=0.12.1",
 ]
 
+[build-system]
+requires = ["uv_build>=0.7.20,<0.8.0"]
+build-backend = "uv_build"
+
 # Example: Add a console script entry point if you build a CLI tool
 [project.scripts]
-mcp-runbook = "src.main:main"
+mcp-runbook = "mcp_runbook.main:main"
 
 # Configuration for tools like Black
 [tool.ruff]
@@ -39,11 +38,14 @@ line-length = 88
 indent-width = 4
 target-version = "py312"
 
+# Config for uv build backen
+# [tool.uv.build-backend]
+# module-name = "mcp_runbook"
+
 [tool.pytest.ini_options]
-pythonpath = ["src"]
 addopts = [
     "-v",               
-    "--cov=src",        
+    "--cov=mcp_runbook",        
     "--cov-report=term" 
 ]
 testpaths = ["test"]

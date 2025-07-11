@@ -2,9 +2,9 @@ import pytest
 import sys
 from pathlib import Path
 from unittest.mock import patch, MagicMock, AsyncMock, call
-from src.server import setup_server, mcp
-from src.models import ConfigFile, Tool, Step, Secret
-from src.parser import Parser
+from mcp_runbook.server import setup_server, mcp
+from mcp_runbook.models import ConfigFile, Tool, Step, Secret
+from mcp_runbook.parser import Parser
 
 
 @pytest.fixture(autouse=True)
@@ -67,20 +67,22 @@ def test_setup_server_registration(mock_tool, minimal_config) -> None:
         function_name = decorator_calls[i][1][0].__name__
         assert function_name == f"tool_logic_{tool.name.replace('-', '_')}"
 
-    # Tools are registered in src.server module
-    import src.server
+    # Tools are registered in mcp_runbook.server module
+    import mcp_runbook.server
 
-    assert hasattr(src.server, "test_tool")
+    assert hasattr(mcp_runbook.server, "test_tool")
 
 
 @pytest.mark.asyncio
 async def test_tool_execution(minimal_config, mock_keyring) -> None:
     """Test tool logic executes without errors"""
-    with patch("src.server._execute_step", new_callable=AsyncMock) as mock_execute_step:
+    with patch(
+        "mcp_runbook.server._execute_step", new_callable=AsyncMock
+    ) as mock_execute_step:
         setup_server(minimal_config)
-        import src.server
+        import mcp_runbook.server
 
-        test_tool = getattr(src.server, "test_tool")
+        test_tool = getattr(mcp_runbook.server, "test_tool")
 
         await test_tool()
 
@@ -95,7 +97,7 @@ async def test_tool_execution(minimal_config, mock_keyring) -> None:
         assert secret_value == "test_secret"
 
 
-@patch("src.server._execute_step", new_callable=AsyncMock)
+@patch("mcp_runbook.server._execute_step", new_callable=AsyncMock)
 @pytest.mark.asyncio
 async def test_hello_name_tool_parameters(
     mock_execute_step,
@@ -108,9 +110,9 @@ async def test_hello_name_tool_parameters(
     setup_server(config)
 
     # Get the dynamically created function
-    import src.server
+    import mcp_runbook.server
 
-    hello_name_tool = getattr(src.server, "hello_name", None)
+    hello_name_tool = getattr(mcp_runbook.server, "hello_name", None)
     assert hello_name_tool, "Tool function 'hello_name' not found"
 
     # Configure mock to return expected output

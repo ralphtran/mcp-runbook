@@ -8,8 +8,8 @@ from typing import Dict
 # Add parent directory to Python path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from src.parser import Parser  # noqa: E402
-from src.server import setup_server, mcp, run_single_tool  # noqa: E402
+from mcp_runbook.parser import Parser  # noqa: E402
+from mcp_runbook.server import setup_server, mcp, run_single_tool  # noqa: E402
 
 
 async def run_tool_async(config, tool_name: str, parameters: Dict[str, str]) -> None:

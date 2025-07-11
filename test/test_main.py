@@ -10,7 +10,7 @@ def test_sample_runbook_config_file():
     python = sys.executable
     config = Path(__file__).parent.parent / "examples/sample-runbook.yaml"
     result = subprocess.run(
-        [python, "-m", "src.main", "-f", str(config), "--run", "sample-tool"],
+        [python, "-m", "mcp_runbook.main", "-f", str(config), "--run", "sample-tool"],
         capture_output=True,
         text=True,
     )

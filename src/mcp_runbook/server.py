@@ -5,7 +5,7 @@ import keyring
 import os
 from typing import Any, Callable, Coroutine, Dict, List
 from mcp.server.fastmcp import FastMCP
-from src.models import ConfigFile, Tool, Step
+from mcp_runbook.models import ConfigFile, Tool, Step
 from jinja2 import Environment, StrictUndefined
 
 # Set up logger for this module

@@ -1,7 +1,7 @@
 import pytest
 from pathlib import Path
-from src.parser import Parser
-from src.models import ConfigFile
+from mcp_runbook.parser import Parser
+from mcp_runbook.models import ConfigFile
 import pydantic
 
 

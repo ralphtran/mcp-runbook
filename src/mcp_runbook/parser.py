@@ -1,6 +1,6 @@
 from pathlib import Path
 import yaml
-from src.models import ConfigFile
+from mcp_runbook.models import ConfigFile
 
 
 class Parser:

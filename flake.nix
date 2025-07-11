@@ -18,7 +18,6 @@
         pythonPkgs = pkgs.python313.pkgs;
         # Create custom scripts
         checkScript = pkgs.writeShellScriptBin "check" ''
-          source .venv/bin/activate
           ruff format
           ruff check
           pytest -v
@@ -28,6 +27,9 @@
         '';
         ghPushScript = pkgs.writeShellScriptBin "push" ''
           git push gh proj/mcp-runbook:main
+        '';
+        buildScript = pkgs.writeShellScriptBin "build" ''
+          uv build
         '';
       in {
         # Development Shell accessible via `nix develop`
@@ -41,10 +43,11 @@
             checkScript              # Add custom check script
             aiScript                 # Add AI assistant script
             ghPushScript             # Add push to Github script
+            buildScript              # Add build script
           ];
           # Run shellHook to create virtual env and install dependencies with uv
           shellHook = ''
-            uv sync --all-extras
+            uv sync
             source .venv/bin/activate
           '';
         };
