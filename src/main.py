@@ -30,7 +30,7 @@ async def run_tool_async(config, tool_name: str, parameters: Dict[str, str]) -> 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Runbook Config Processor")
     parser.add_argument("-f", "--file", required=True, help="Path to YAML config file")
-    parser.add_argument("--server", action="store_true", help="Start MCP server mode")
+    # Server mode is now the default behavior without --run
     parser.add_argument("--run", type=str, help="Run a specific tool by name")
     parser.add_argument(
         "--args", nargs="*", help="Arguments for the tool in key=value format"
@@ -40,16 +40,7 @@ def main() -> None:
     # Process config file
     config = Parser.parse_config(Path(args.file))
 
-    if args.server:
-        setup_server(config)
-        print(f"🛫 Starting MCP server with {len(config.tools)} tools...")
-        try:
-            mcp.run(transport="stdio")
-        except Exception as e:
-            print(f"⛔ Server error: {str(e)}")
-            sys.exit(1)
-
-    elif args.run:
+    if args.run:
         # Parse key-value arguments
         params = {}
         if args.args:
@@ -63,10 +54,13 @@ def main() -> None:
         asyncio.run(run_tool_async(config, args.run, params))
 
     else:
-        print(
-            "✅ Successfully parsed config: Version "
-            + f"{config.version}, {len(config.tools)} tools found"
-        )
+        setup_server(config)
+        print(f"🛫 Starting MCP server with {len(config.tools)} tools...")
+        try:
+            mcp.run(transport="stdio")
+        except Exception as e:
+            print(f"⛔ Server error: {str(e)}")
+            sys.exit(1)
 
 
 if __name__ == "__main__":

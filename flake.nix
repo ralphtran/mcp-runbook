@@ -24,7 +24,7 @@
           pytest -v
         '';
         aiScript = pkgs.writeShellScriptBin "ai" ''
-          aider --test-cmd "nix develop -c check" --read docs/Conventions.md flake.nix
+          aider --test-cmd "nix develop -c check" --read docs/notes.org flake.nix
         '';
         ghPushScript = pkgs.writeShellScriptBin "push" ''
           git push gh proj/mcp-runbook:main

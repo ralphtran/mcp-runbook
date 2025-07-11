@@ -30,8 +30,8 @@ dev = [
 ]
 
 # Example: Add a console script entry point if you build a CLI tool
-# [project.scripts]
-# resume-build = "resume_builder.cli:main"
+[project.scripts]
+mcp-runbook = "src.main:main"
 
 # Configuration for tools like Black
 [tool.ruff]
