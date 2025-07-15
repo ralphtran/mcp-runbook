@@ -19,7 +19,7 @@
         # Create custom scripts
         checkScript = pkgs.writeShellScriptBin "check" ''
           ruff format
-          ruff check
+          ruff check --fix
           pytest -v
         '';
         aiScript = pkgs.writeShellScriptBin "ai" ''

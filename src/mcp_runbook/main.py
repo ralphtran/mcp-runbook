@@ -1,15 +1,11 @@
 import argparse
 import asyncio
-import os
 import sys
 from pathlib import Path
 from typing import Dict
 
-# Add parent directory to Python path
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-from mcp_runbook.parser import Parser  # noqa: E402
-from mcp_runbook.server import setup_server, mcp, run_single_tool  # noqa: E402
+from .parser import Parser
+from .server import setup_server, mcp, run_single_tool
 
 
 async def run_tool_async(config, tool_name: str, parameters: Dict[str, str]) -> None:

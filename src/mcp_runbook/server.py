@@ -14,6 +14,12 @@ logger = logging.getLogger(__name__)
 mcp = FastMCP("MCP Server Runbook")
 
 
+def _prepare_execution_env(tool: Tool) -> Dict[str, str]:
+    """Create execution environment by combining OS env and tool secrets"""
+    secrets_env = _fetch_secrets(tool)
+    return {**os.environ, **secrets_env}
+
+
 def setup_server(config_file: ConfigFile) -> None:
     """Create decorated functions for each tool in the config file."""
     for tool in config_file.tools:
@@ -74,8 +80,7 @@ def _create_tool_logic(tool: Tool) -> Callable[..., Coroutine[Any, Any, str]]:
         Execute the steps for a tool with given parameters and return output.
         """
         logger.info(f"🔧 Starting tool {tool.name} with parameters: {parameters}")
-        secrets_env = _fetch_secrets(tool)
-        base_env = {**os.environ, **secrets_env}
+        base_env = _prepare_execution_env(tool)
         output_lines = []
         for i, step in enumerate(tool.steps, start=1):
             step_output = await _execute_step(
@@ -222,7 +227,6 @@ async def run_single_tool(tool: Tool, user_parameters: Dict[str, str]) -> str:
     Execute all steps in a single tool without MCP server and return output.
     """
     logger.info(f"🔧 Starting CLI execution of tool: {tool.name}")
-    secrets_env = _fetch_secrets(tool)
     # Merge default parameters with user provided parameters
     parameters = {}
     if tool.parameters:
@@ -233,7 +237,7 @@ async def run_single_tool(tool: Tool, user_parameters: Dict[str, str]) -> str:
             # Otherwise use default if available
             elif param.default is not None:
                 parameters[name] = param.default
-    base_env = {**os.environ, **secrets_env}
+    base_env = _prepare_execution_env(tool)
     # We run each step, and the output is printed to stdout in real-time.
     output_lines = []
     for step_index, step in enumerate(tool.steps, start=1):
